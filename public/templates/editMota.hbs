@@ -1,0 +1,136 @@
+<script>
+  function save_clicked(event) {
+    event.preventDefault();
+    var form = document.getElementById('motaForm');
+    form.classList.add('was-validated');
+    if (form.checkValidity()) {
+      var motanueva = {nombre: $('#name').val(),
+        direccion: $('#address').val(),
+        x: $('#coordx').val(),
+        y: $('#coordy').val(),
+        z: $('#coordz').val(),
+        time: null,
+        id: null}
+      if (Modelo.edit) {
+        motanueva.time = Modelo.mota.time;
+        motanueva.id = Modelo.mota.id;
+        Modelo.editMota(JSON.stringify(motanueva));
+      }
+      else {
+        Modelo.saveMota(JSON.stringify(motanueva)).done(function (mota) {
+          if (mota) {
+            motanueva = {}
+            navigateTo('/miperfil', event)
+          }
+          else{
+            Modelo.mota = {
+              nombre: motanueva.nombre,
+              direccion: motanueva.direccion,
+              x: motanueva.x,
+              y: motanueva.y,
+              z: motanueva.z
+            }
+            navigateTo('/editMota/new', event)
+          }
+        }).fail(function (error) {
+          Mensajes.danger.push(`${error.statusText} (${error.status}): ${error.responseJSON.message}`);
+          Modelo.mota = {
+              nombre: motanueva.nombre,
+              direccion: motanueva.direccion,
+              x: motanueva.x,
+              y: motanueva.y,
+              z: motanueva.z
+            }
+          navigateTo('/editMota/new', event)
+        });
+      }
+    }
+    else {
+      console.log("Missing Value")
+    }
+  }
+</script>
+{{> navBar this}}
+{{> header this}}
+{{> mensajes this}}
+<main>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-xl-6 col-lg-7 col-md-9 col-12 text-center">
+        {{#if mota}}
+          <h2>Editar información de la mota</h2>
+        {{else}}
+          <h2>Dar de alta una nueva mota</h2>
+        {{/if}}
+        <form id="motaForm" class="needs-validation" novalidate>
+          <div class="form-group">
+            <input type="text" id="name" class="form-control" autofocus="" placeholder="Nombre de la mota" value="" required>
+            <div class="invalid-feedback">EL campo del nombre es obligatorio</div>
+          </div>
+          <div class="form-group">
+            <input type="text" id="address" class="form-control" placeholder="Dirección" value="" required>
+            <div class="invalid-feedback">El campo de dirección es obligatorio</div>
+          </div>
+          <div class="form-group">
+            <div class="row">
+              <label for="coords" class="col-sm-3 col-form-label text-left">Coordenadas</label>
+              <span id="needHelp">??
+                <div class="info">
+                  <h5>Como definir las coordenadas</h5>
+                  <p>Para saber en que coordenadas has posicionado la mota entra en <a href="https://www.google.es/maps/?hl=es">Google Maps</a> y haz click derecho sobre la parte del edificio donde crees que esta localizada la mota. 
+                  Al clicar sobre las coordenadas se copiarán a tu portapapeles y solo los tendrás que pegar en sus correspondientes celdas</p>
+                </div>
+              </span>
+            </div>
+            <div class="row" id="coordsx">
+              <label for="coordx" class="col-sm-4 col-form-label text-left">Coordenada x</label>
+              <div class="col-sm-8">
+                <input type="number" step="any" id="coordx" placeholder="12.3456789" class="form-control" required>
+                <div class="invalid-feedback">Coord x es necesaria</div>
+              </div>
+            </div>
+            <div class="row" id="coordsy">
+              <label for="coordy" class="col-sm-4 col-form-label text-left">Coordenada y</label>
+              <div class="col-sm-8">
+                <input type="number" step="any" id="coordy" placeholder="12.3456789" class="form-control" required>
+                <div class="invalid-feedback">Coord y es necesaria</div>
+              </div>
+            </div>
+            <div class="row" id="coordsz">
+              <label for="coordz" class="col-sm-4 col-form-label text-left">Coordenada z</label>
+              <div class="col-sm-8">
+                <input type="number" step="any" id="coordz" placeholder="12.3456789" class="form-control" required>
+                <div class="invalid-feedback">Coord z es necesaria</div>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <button type="submit" class="btn btn-primary" onclick="save_clicked(event)">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <br><br><br>
+</main>
+{{> footer this}}
+
+<script>
+  if (Modelo.mota) {
+    if (Modelo.mota.nombre){
+      $('#name').val(Modelo.mota.nombre);
+    }
+    if (Modelo.mota.direccion){
+      $('#address').val(Modelo.mota.direccion);
+    }
+    if (Modelo.mota.x){
+      $('#coordx').val(Modelo.mota.x);
+    }
+    if (Modelo.mota.y){
+      $('#coordy').val(Modelo.mota.y);
+    }
+    if (Modelo.mota.z){
+      $('#coordz').val(Modelo.mota.z);
+    }
+  }
+</script>

@@ -1,0 +1,48 @@
+<!--
+    Definimos la función que se encargará de redirigirnos a la información de la mota seleccionada
+-->
+<script>
+  function verMota(event, _id){
+    event.preventDefault();
+    navigateTo("/mota/"+_id, event)
+  }
+</script>
+
+{{> navBar this}}
+{{> header this}}  <!-- Encabezado -->
+{{> mensajes this}}
+<main>
+    <div class="container">
+        <div class="row justify-content-center">
+            <!-- Div que contiene el mapa -->
+            <div id="mapaid"></div>
+        </div>
+    </div>
+    <br><br><br>
+</main>
+{{> footer this}}  <!-- Pie de página -->
+
+
+<!-- Script que contiene los token personales -->
+<script type="text/javascript" src="../variables.js"></script>
+<!-- Script que procesa la informarción recibida del servidor -->
+<script>
+    var geojsons = {{{this.geojsons}}} // El geojson con toda la información
+    // Definimos el mapa usando leaflet
+    // setview define las coordenadas en las que se centrará el mapa y el zoom
+    var mymap = L.map('mapaid').setView([38.983307, -1.857450], 6);
+    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 20,
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken: tokenMapa
+    }).addTo(mymap);
+    // La siguiente linea crea el pin de cada mota para ver en el mapa la posición de la mota, mostrando información de las últimas mediciones
+    L.geoJSON(geojsons[0], {
+        onEachFeature: function (f, l) {
+        l.bindPopup('<pre>'+JSON.stringify(f.properties,null,' ').replace(/[\{\}"]/g,'')+'</pre> <a onclick="verMota(event,`'+ f.idmota +'`)" role="button"> &nbsp;Más detalles</a>');
+        }
+    }).addTo(mymap);
+</script>

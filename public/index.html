@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+        <!-- Bootstrap CSS -->
+        <link
+        rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+        integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+        crossorigin="anonymous"
+        />
+        <!-- Leaflet CSS -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+        <!-- AJAX -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.css" rel="stylesheet">
+        <!-- Estilo Custom -->
+        <style type="text/css">
+            #mapaid { height: 600px; width: 900px; }
+            .info{
+                box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+                z-index: 1;
+            }
+            #needHelp .info
+            {
+                position: absolute;
+                bottom: 0;
+                width: 400px;
+                background: #fff;
+                padding: 20px;
+                box-sizing: border-box;
+                border-radius: 4px;
+                visibility: hidden;
+                opacity: 0;
+                transition: 0.5s ;
+            }
+            #needHelp:hover .info
+            {
+                visibility: visible;
+                opacity: 1;
+            }
+        </style>
+        
+        <title>Sensores Smart UCLM</title>
+        <script src="/mensajes.js"></script>
+    </head>
+    <body>
+        <!-- Jquery, popper, bootstrap y handelbars-->
+        <script
+            src="https://code.jquery.com/jquery-3.5.1.min.js"
+            integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.6/handlebars.min.js"
+            integrity="sha512-zT3zHcFYbQwjHdKjCu6OMmETx8fJA9S7E6W7kBeFxultf75OPTYUJigEKX58qgyQMi1m1EgenfjMXlRZG8BXaw=="
+            crossorigin="anonymous"
+        ></script>
+        <!-- Leaflet javascript -->
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+        <!-- D3 javascript necesario para C3 -->
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <!-- C3 javascript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.js"></script>
+        <!-- Javascript del modelo público -->
+        <script src="/modelop.js"></script>
+
+        <!-- El contenido que cambiará dependiendo de la ruta -->
+        <span id="contenido"></span>
+
+        <script>
+            // Función que se encarga de mostrar todo
+            function render(url, container, context) {
+                return $.ajax({
+                url: url,
+                method: "GET",
+                })
+                .done(function (source) {
+                    var template = Handlebars.compile(source);
+                    var html = template(context);
+                    $(container).html(html);
+                })
+                .fail(function (error) {
+                    console.error("GET ", url, error);
+                }); // http GET Error
+            }
+            // Función que carga los parciales (header, footer)
+            function loadPartial(partial, url) {
+                return $.ajax({
+                url: url,
+                method: "GET",
+                })
+                .done(function (source) {
+                    Handlebars.registerPartial(partial, source);
+                })
+                .fail(function (error) {
+                    console.error("GET ", url, error);
+                }); // http GET Error
+            }
+            // Funcion que es llamada con la nueva ruta y almacena en un buffer el orden en el cuál accedemos a las páginas
+            // para poder volver en cualquier momento
+            function navigateTo(url, event) {
+                event.preventDefault();
+                history.pushState(null, "", url);
+                route(url);
+            }
+            // Función que se encarga de cargar el contenido de la ruta
+            function route() {
+                var path = location.pathname;
+                var matching = null;
+                console.log("Accediendo", path);
+                var context = {};
+                context.mensajes = {
+                    success: Mensajes.success,
+                    danger: Mensajes.danger,
+                };
+                Mensajes.clear();
+
+                var p = Modelo.getUser()
+                    .done(function (usuario) {
+                        context.usuario = usuario;
+                    })
+                    .fail(function (error) {
+                        console.error(error);
+                    });
+
+                if ((matching = path.match(/^\/index$/))) {
+                    return Modelo.getgeojsons()
+                        .done(function(result) {
+                            context.geojsons = JSON.stringify(result);
+                            Modelo.getToken()
+                        })
+                        .fail(function (error) {
+                            console.error(error);
+                        })
+                        .always(function () {
+                            return p.always(function () {
+                                return render("/templates/index.hbs", "#contenido", context);
+                            });
+                        });
+                } else if ((matching = path.match(/^\/$/))) {
+                    return Modelo.getgeojsons()
+                        .done(function(result) {
+                            context.geojsons = JSON.stringify(result);
+                        })
+                        .fail(function (error) {
+                            console.error(error);
+                        })
+                        .always(function () {
+                            return p.always(function () {
+                                return render("/templates/index.hbs", "#contenido", context);
+                            });
+                        });
+                } else if ((matching = path.match(/^\/mota\/(\w*)$/))) {
+                    return Modelo.getmediciones(matching[1])
+                        .done(function(result) {
+                            context.info = JSON.stringify(result);
+                        })
+                        .fail(function (error) {
+                            console.error(error);
+                        })
+                        .always(function () {
+                            if (context.info){
+                                return p.always(function () {
+                                    return render("/templates/mota.hbs", "#contenido", context);
+                                });
+                            }
+                            else{
+                                return p.always(function () {
+                                    return render("/templates/not-found.hbs", "#contenido", context);
+                                });
+                            }
+                        });
+                } else if ((matching = path.match(/^\/miperfil$/))) {
+                    var token = Modelo.getToken()
+                    if (token != ""){
+                        return Modelo.getPerfilMotas()
+                            .done(function(result) {
+                                context.perfil = result.perfil;
+                                context.motas = result.motas;
+                            })
+                            .fail(function (error) {
+                                console.error(error);
+                            })
+                            .always(function () {
+                                if (context.perfil){
+                                    return p.always(function () {
+                                        return render("/templates/perfil.hbs", "#contenido", context);
+                                    });
+                                }
+                                else{
+                                    return p.always(function () {
+                                        return render("/templates/not-found.hbs", "#contenido", context);
+                                    });
+                                }
+                            });
+                    }
+                } else if ((matching = path.match(/^\/sensores\/(\w*)$/))) {
+                    var token = Modelo.getToken()
+                    if (token != ""){
+                        return Modelo.getSensoresMota(matching[1])
+                            .done(function(result) {
+                                context.mota = result.mota;
+                                context.sensores = result.sensores;
+                                console.log(context.sensores)
+                            })
+                            .fail(function (error) {
+                                console.error(error);
+                            })
+                            .always(function () {
+                                if (context.mota){
+                                    return p.always(function () {
+                                        return render("/templates/sensores.hbs", "#contenido", context);
+                                    });
+                                }
+                                else{
+                                    return p.always(function () {
+                                        return render("/templates/not-found.hbs", "#contenido", context);
+                                    });
+                                }
+                            });
+                    } else {
+                        return p.always(function () {
+                            return render("/templates/erroneo.hbs", "#contenido", context);
+                        });
+                    }
+                } else if ((matching = path.match(/^\/signin$/))) {
+                    return p.always(function () {
+                        return render("/templates/signin.hbs", "#contenido", context);
+                    });
+                } else if ((matching = path.match(/^\/editMota\/(\w*)$/))) {
+                    var token = Modelo.getToken()
+                    if (token != "" && matching[1] == "new"){
+                        Modelo.mota = null;
+                        Modelo.edit = false;
+                        return p.always(function () {
+                            return render("/templates/editMota.hbs", "#contenido", context);
+                        });
+                    }
+                    else if (token != "" && matching[1] != ""){
+                        return Modelo.getMotaInfo(matching[1])
+                            .done(function(result) {
+                                context.mota = result.mota;
+                            })
+                            .fail(function (error) {
+                                console.error(error);
+                            })
+                            .always(function () {
+                                if (context.mota){
+                                    Modelo.mota = context.mota;
+                                    Modelo.edit = true;
+                                    return p.always(function () {
+                                        return render("/templates/editMota.hbs", "#contenido", context);
+                                    });
+                                }
+                                else{
+                                    return p.always(function () {
+                                        return render("/templates/not-found.hbs", "#contenido", context);
+                                    });
+                                }
+                            });
+                    }
+                    else
+                    {
+                        return p.always(function () {
+                            return render("/templates/erroneo.hbs", "#contenido", context);
+                        });
+                    }
+                } else {
+                    return p.always(function () {
+                        return render("/templates/erroneo.hbs", "#contenido", context);
+                    });
+                }
+            }
+            // Función encargada de cargar los parciales
+            $(function () {
+                window.addEventListener("popstate", (event) => route(), false);
+                $.when(
+                loadPartial("navBar", "/parciales/nav-bar.hbs"),
+                loadPartial("header", "/parciales/header.hbs"),
+                loadPartial("footer", "/parciales/footer.hbs"),
+                loadPartial("mensajes", "/parciales/mensajes.hbs")
+                ).done(function () {
+                route();
+                });
+            });
+
+        </script>
+
+    </body>
+</html>

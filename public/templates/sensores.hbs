@@ -1,0 +1,99 @@
+{{> navBar this}}
+{{> header this}} <!-- Encabezado -->
+{{> mensajes this}}
+<main>
+  <div class="container">
+    <h2>Mota</h2>
+    <div class="row">
+      <div class="col-12">
+        <p><b>Dirección: </b><span id="motadir">{{mota.direccion}}</span></p>
+      </div>
+      <div class="col-12">
+        <p><b>Coordenadas</b></p>
+      </div>
+      <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+        <p><b>x: </b><span id="motax">{{mota.x}}</span></p>
+      </div>
+      <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+        <p><b>y: </b><span id="motay">{{mota.y}}</span></p>
+      </div>
+      <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+        <p><b>z: </b><span id="motaz">{{mota.z}} </span></p>
+      </div>
+    </div>
+    <hr />
+    <hr />
+      <h3>Lista de sensores</h3>
+    {{#if sensores}}
+    {{#each sensores}}
+    <div class="card">
+      <div class="card-header">
+        {{nombre}}
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-xl-6 col-lg-6 col-md-6 col-12">
+            <p><b>Mide </b><span id="sensortipo">{{tipo}}</span><b> en </b><span id="sensorunidad">{{unidad}}</span></p>
+          </div>
+          <div class="col-xl-6 col-lg-6 col-md-6 col-12">
+            <p><b>Acceso al público: </b><span id="sensortipo">{{#if mostrar}} Si {{else}} No {{/if}}</span></p>
+          </div>
+        </div>
+        <div class="text-right">
+          <a class="card-link"  onclick="navigateTo('/editarsensor/{{id}}', event)">Editar sensor</a>
+        </div>
+        {{#if info}}
+        <div class="row justify-content-center">
+          <!-- Gráfica con la información recogida por los sensores -->
+          <div id="grafico{{id}}"></div>
+          <script> 
+            var info = {{{info}}}
+            var xvalues = info.tiempos;
+            var mediciones = info.medidas;
+            var xss = {}
+            var columnss = []
+            xss[mediciones[0]] = xvalues[0]
+            columnss.push(xvalues)
+            columnss.push(mediciones)
+            // Usamos c3 para generar la gráfica
+            var chart = c3.generate({
+              bindto: '#grafico{{id}}',
+              data: { 
+                  xs: xss,
+                  xFormat: '%Y-%m-%d %H:%M:%S.%LZ',
+                  columns: columnss,
+              },
+              axis: {
+                  x: {
+                      type: 'timeseries',
+                      tick: {
+                          fit:false,
+                          format: '%Y-%m-%d %H:%M:%S.%LZ'
+                      }
+                  }
+              },
+              zoom: {
+                  enabled: true,
+              }
+          });
+          </script>
+        </div>
+        {{else}}
+        <br>
+        <h5>Aún no se han obtenido mediciones de este sensor</h5>
+        {{/if}}
+      </div>
+    </div>
+    <br>
+    {{/each}}
+    {{else}}
+    <br>
+    <h4>Aún no se ha registrado sensores en esta mota</h4>
+    {{/if}}
+    <br><br>
+    <div class="text-right">
+      <a class="btn btn-primary" onclick="navigateTo('/nuevoSensor', event)"> &nbsp;Nuevo sensor&nbsp;</a>
+    </div>
+    <br><br><br>
+</main>
+{{> footer this}}

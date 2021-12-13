@@ -1,0 +1,52 @@
+{{> navBar this}}
+{{> header this}} <!-- Encabezado -->
+{{> mensajes this}}
+<main>
+    <div class="container">
+        <h4><b>Mota</b>: <span id="nmota">Nombre mota</span></h4>
+        <h5><b>Dirección</b> : <span id="dmota">Direccion</span></h5>
+        <br>
+        <div class="row justify-content-center">
+            <!-- Gráfica con la información recogida por los sensores -->
+            <div id="grafico"></div>
+        </div>
+    </div>
+</main>
+{{> footer this}}  <!-- Pie de página -->
+
+<!-- Script que procesa la información recibida por el servidor -->
+<script>
+  var info = {{{this.info}}} // El json recibido
+  document.getElementById("nmota").innerHTML = info.mota.nombre;
+  document.getElementById("dmota").innerHTML = info.mota.direccion;
+  var xvalues = info.tiempos;
+  var mediciones = info.medidas;
+  var xss = {}
+  var columnss = []
+  for (i=0; i < xvalues.length; i++){
+      xss[mediciones[i][0]] = xvalues[i][0]
+      columnss.push(xvalues[i])
+      columnss.push(mediciones[i])
+  }
+  // Usamos c3 para generar la gráfica
+  var chart = c3.generate({
+    bindto: '#grafico',
+    data: { 
+        xs: xss,
+        xFormat: '%Y-%m-%d %H:%M:%S.%LZ',
+        columns: columnss,
+    },
+    axis: {
+        x: {
+            type: 'timeseries',
+            tick: {
+                fit:false,
+                format: '%Y-%m-%d %H:%M:%S.%LZ'
+            }
+        }
+    },
+    zoom: {
+        enabled: true,
+    }
+});
+</script>

@@ -1,0 +1,66 @@
+{{> navBar this}}
+{{> header this}} <!-- Encabezado -->
+{{> mensajes this}}
+<main>
+  <div class="container">
+    <h2>Perfil</h2>
+    <div class="row">
+      <div class="col-12">
+        <p><b>Nombre: </b><span id="showName">{{perfil.nombre}}</span></p>
+      </div>
+      <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+        <p><b>Primer Apellido: </b><span id="showSurname">{{perfil.apellido1}}</span></p>
+      </div>
+      <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+        <p><b>Segundo Apellido: </b><span id="showBirth">{{perfil.apellido2}}</span></p>
+      </div>
+      <div class="col-12">
+        <p><b>Correo: </b><span id="showEmail">{{perfil.correo}} </span></p>
+      </div>
+    </div>
+    <hr />
+    <hr />
+      <h3>Lista de motas</h3>
+    {{#if motas}}
+    {{#each motas}}
+    <div class="card">
+      <div class="card-header">
+        {{nombre}}
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-12">
+            <p><b>Dirección: </b><span id="motadir">{{direccion}}</span></p>
+          </div>
+          <div class="col-12">
+            <p><b>Coordenadas</b></p>
+          </div>
+          <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+            <p><b>x: </b><span id="motax">{{x}}</span></p>
+          </div>
+          <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+            <p><b>y: </b><span id="motay">{{y}}</span></p>
+          </div>
+          <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+            <p><b>z: </b><span id="motaz">{{z}} </span></p>
+          </div>
+        </div>
+        <div class="text-right">
+          <!--a class="card-link"  onclick="navigateTo('/editMota/{{id}}', event)">Editar mota</a-->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <a class="btn btn-secondary" onclick="navigateTo('/sensores/{{id}}', event)"> &nbsp;Sensores&nbsp;</a>
+        </div>
+      </div>
+    </div>
+    <br>
+    {{/each}}
+    {{else}}
+    <br>
+    <h4>Aún no se ha registrado motas</h4>
+    {{/if}}
+    <br><br>
+    <div class="text-right">
+      <a class="btn btn-primary" onclick="navigateTo('/editMota/new', event)"> &nbsp;Nueva mota&nbsp;</a>
+    </div>
+    <br><br><br>
+</main>
+{{> footer this}}
